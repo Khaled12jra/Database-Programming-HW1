@@ -1,0 +1,86 @@
+
+   Database Programming - Homework #1
+   Student Name: [ khaled emad jamel jraiei ]
+   University ID:  [ 202220432 ]
+
+Q1: Employee Database DDL
+ 1. Create 'company' table first (referenced by works)
+CREATE TABLE company (
+    company_name VARCHAR(50) PRIMARY KEY,
+    city VARCHAR(50)
+);
+ 2. Create 'employee' table (referenced by works and manages)
+CREATE TABLE employee (
+    ID VARCHAR(10) PRIMARY KEY,
+    person_name VARCHAR(50) NOT NULL,
+    street VARCHAR(100),
+    city VARCHAR(50)
+);
+ 3. Create 'works' table
+CREATE TABLE works (
+    ID VARCHAR(10),
+    company_name VARCHAR(50),
+    salary DECIMAL(10, 2),
+      CONSTRAINT pk_works PRIMARY KEY (ID),
+     Constraint: Employee must exist in employee table
+    CONSTRAINT fk_works_employee FOREIGN KEY (ID) 
+        REFERENCES employee(ID) ON DELETE CASCADE,
+         Constraint: Company must exist in company table
+    CONSTRAINT fk_works_company FOREIGN KEY (company_name) 
+        REFERENCES company(company_name) ON DELETE CASCADE
+);
+ 4. Create 'manages' table
+CREATE TABLE manages (
+    ID VARCHAR(10),
+    manager_id VARCHAR(10),
+    
+    CONSTRAINT pk_manages PRIMARY KEY (ID),
+    
+    -- Constraint: Employee (subordinate) must exist
+    CONSTRAINT fk_manages_employee FOREIGN KEY (ID) 
+        REFERENCES employee(ID) ON DELETE CASCADE,
+        
+    -- Constraint: Manager must also be an employee
+    CONSTRAINT fk_manages_manager FOREIGN KEY (manager_id) 
+        REFERENCES employee(ID) ON DELETE SET NULL
+);
+
+Q2: Bank Database Queries
+A. Find ID of customers who have an account but not a loan.
+SELECT ID 
+FROM depositor
+EXCEPT
+SELECT ID 
+FROM borrower;
+
+B. Find ID of customers living in same street/city as '12345'.
+SELECT ID 
+FROM customer
+WHERE customer_street = (SELECT customer_street FROM customer WHERE ID = '12345')
+  AND customer_city = (SELECT customer_city FROM customer WHERE ID = '12345')
+  AND ID <> '12345';
+
+C. Find branch name with at least one customer in 'Harrison'.
+SELECT DISTINCT a.branch_name
+FROM account a
+JOIN depositor d ON a.account_number = d.account_number
+JOIN customer c ON d.ID = c.ID
+WHERE c.customer_city = 'Harrison';
+ Q3: SQL Window Functions
+ A. Cumulative total sum for qty from demand table.
+SELECT 
+    day, 
+    qty, 
+    SUM(qty) OVER (ORDER BY day) AS cumQty
+FROM demand;
+B. Extract the two worst performing days for each product.
+SELECT product, day, qty, RN
+FROM (
+    SELECT 
+        product, 
+        day, 
+        qty,
+        ROW_NUMBER() OVER (PARTITION BY product ORDER BY qty ASC) as RN
+    FROM demand
+) AS RankedData
+WHERE RN <= 2;
